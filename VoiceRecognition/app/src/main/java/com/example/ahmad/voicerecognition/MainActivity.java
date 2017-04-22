@@ -8,6 +8,7 @@ import android.content.ActivityNotFoundException;
 import android.content.Intent;
 import android.os.Bundle;
 import android.speech.RecognizerIntent;
+import android.speech.tts.TextToSpeech;
 import android.util.Log;
 import android.view.Menu;
 import android.view.View;
@@ -29,6 +30,7 @@ import static android.R.id.progress;
 public class MainActivity extends Activity {
 
     private TextView txtSpeechInput;
+
     private ImageButton btnSpeak;
     private final int REQ_CODE_SPEECH_INPUT = 100;
     String address = null;
@@ -37,6 +39,12 @@ public class MainActivity extends Activity {
     BluetoothSocket btSocket = null;
     private boolean isBtConnected = false;
     static final UUID myUUID = UUID.fromString("00001101-0000-1000-8000-00805F9B34FB");
+    private boolean inTempratureQuestion2 =false;
+    private boolean inSmokeQuestion2 =false;
+    private boolean inLightOnQuestion2 =false;
+    private boolean inLightOffQuestion2 =false;
+
+    TextToSpeech textToSpeech;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -48,6 +56,14 @@ public class MainActivity extends Activity {
         txtSpeechInput = (TextView) findViewById(R.id.txtSpeechInput);
         btnSpeak = (ImageButton) findViewById(R.id.btnSpeak);
 
+        textToSpeech = new TextToSpeech(getApplicationContext(), new TextToSpeech.OnInitListener() {
+            @Override
+            public void onInit(int status) {
+                if(status != TextToSpeech.ERROR) {
+                    textToSpeech.setLanguage(Locale.UK);
+                }
+            }
+        });
         // hide the action bar
        // getActionBar().hide();
 
@@ -80,6 +96,13 @@ public class MainActivity extends Activity {
         }
     }
 
+    private void ClearState()
+    {
+        inTempratureQuestion2 =false;
+        inSmokeQuestion2 =false;
+        inLightOnQuestion2 =false;
+        inLightOffQuestion2 =false;
+    }
     /**
      * Receiving speech input
      * */
@@ -94,8 +117,80 @@ public class MainActivity extends Activity {
                     ArrayList<String> result = data
                             .getStringArrayListExtra(RecognizerIntent.EXTRA_RESULTS);
                     txtSpeechInput.setText(result.get(0));
-                    if(result.get(0).equals("temprature")){
-                        turnOnLed();
+
+                    if(result.get(0).equals("temperature")){
+                        ClearState();
+                        sendCommand("send temperature ratio");
+
+                        textToSpeech.speak("would you like to see the smoke ratio too?", TextToSpeech.QUEUE_FLUSH, null);
+                        inTempratureQuestion2=true;
+                    }
+                    else if(result.get(0).equals("yes") && inTempratureQuestion2) {
+                        sendCommand("send smoke ratio");
+                        ClearState();
+
+                    }
+                    else if(result.get(0).equals("no") && inTempratureQuestion2) {
+                        ClearState();
+                    }
+                    else if(result.get(0).equals("smoke")){
+                        sendCommand("send smoke ratio");
+                        textToSpeech.speak("would you like to see the temprature ratio too?", TextToSpeech.QUEUE_FLUSH, null);
+                        inSmokeQuestion2=true;
+                    }
+                    else if(result.get(0).equals("yes") && inSmokeQuestion2) {
+                        sendCommand("send temperature ratio");
+                        ClearState();
+                    }
+                    else if(result.get(0).equals("no") && inSmokeQuestion2) {
+                        ClearState();
+                    }
+                    else if (result.get(0).contains("light") || inLightOnQuestion2 )
+                    {
+                        if ((result.get(0).contains("on") || inLightOnQuestion2) && !result.get(0).contains("off"))
+                        {
+                            if (result.get(0).contains("bathroom") )
+                            {
+                                sendCommand("bathroom on");
+                                ClearState();
+                            }
+                            else if (result.get(0).contains("bedroom"))
+                            {
+                                sendCommand("bedroom on");
+                                ClearState();
+                            }
+                            else if (result.get(0).contains("all"))
+                            {
+                                sendCommand("all lights on");
+                                ClearState();
+                            }
+                            else {
+                                textToSpeech.speak("which room?", TextToSpeech.QUEUE_FLUSH, null);
+                                inLightOnQuestion2 =true;
+                            }
+                        }
+                        else if ((result.get(0).contains("off")|| inLightOffQuestion2) && !result.get(0).contains("on"))
+                        {
+                            if (result.get(0).contains("bathroom") )
+                            {
+                                sendCommand("bathroom off");
+                                ClearState();
+                            }
+                            else if (result.get(0).contains("bedroom"))
+                            {
+                                sendCommand("bedroom off");
+                                ClearState();
+                            }
+                            else if (result.get(0).contains("all"))
+                            {
+                                sendCommand("all lights off");
+                                ClearState();
+                            }
+                            else {
+                                textToSpeech.speak("which room?", TextToSpeech.QUEUE_FLUSH, null);
+                                inLightOffQuestion2 =true;
+                            }
+                        }
                     }
                 }
                 break;
@@ -175,14 +270,14 @@ public class MainActivity extends Activity {
         finish(); //return to the first layout
     }
 
-    private void turnOnLed()
+    private void sendCommand(String command)
     {
         Log.e("test","here");
         if (btSocket!=null)
         {
             try
             {
-                btSocket.getOutputStream().write("TO".toString().getBytes());
+                btSocket.getOutputStream().write(command.getBytes());
             }
             catch (IOException e)
             {
