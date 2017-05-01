@@ -134,6 +134,7 @@ public class MainActivity extends Activity {
                         ClearState();
                     }
                     else if(result.get(0).equals("smoke")){
+                        ClearState();
                         sendCommand("send smoke ratio");
                         textToSpeech.speak("would you like to see the temprature ratio too?", TextToSpeech.QUEUE_FLUSH, null);
                         inSmokeQuestion2=true;
