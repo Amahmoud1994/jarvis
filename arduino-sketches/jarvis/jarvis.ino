@@ -37,7 +37,7 @@ void loop() {
     if(voice == "send smoke ratio") {
 
       int analogSensor = analogRead(smokeSensor);
-      sprintf(buff, "The Gas ratio is %d", analogSensor);  // and finally the integer
+      sprintf(buff, "%d", analogSensor);  // and finally the integer
       Serial.write(buff);
       Serial.write("\n");
       delay(1000);
@@ -65,7 +65,7 @@ void loop() {
   //----------Get the temperature data to mobile----------// 
     else if(voice == "send temperature ratio") {
       int analogSensor = digitalRead(tempSensor);
-      sprintf(buff, "The Temperature ratio is %d", analogSensor);  // and finally the integer
+      sprintf(buff, "%d", analogSensor);  // and finally the integer
       Serial.write(buff);
       Serial.write("\n");
       delay(1000);  
