@@ -272,18 +272,44 @@ public class MainActivity extends Activity {
 
     private void sendCommand(String command)
     {
-        Log.e("test","here");
         if (btSocket!=null)
         {
             try
             {
                 btSocket.getOutputStream().write(command.getBytes());
+                recieveReading();
             }
             catch (IOException e)
             {
                 msg("Error");
             }
         }
+
+    }
+
+    private void recieveReading()
+    {
+        Log.e("test","here");
+
+
+            try
+            {
+                byte[] buffer = new byte[256];  // buffer store for the stream
+                int bytes;
+                bytes = btSocket.getInputStream().read(buffer);
+                //String res = btSocket.getInputStream().;
+                String res = new String(buffer, 0, bytes);
+                Log.e("test",res);
+                txtSpeechInput.setText(res);
+                textToSpeech.speak(res, TextToSpeech.QUEUE_FLUSH, null);
+                buffer = new byte[256];
+                bytes = 0;
+            }
+            catch (IOException e)
+            {
+                msg("Error");
+            }
+
     }
 
 
